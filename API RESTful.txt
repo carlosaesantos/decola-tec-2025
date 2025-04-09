@@ -1,0 +1,159 @@
+Java
+
+// build.gradle
+plugins {
+    id 'org.springframework.boot' version '3.2.5'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'java'
+}
+
+group = 'com.decolatec'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Adicione outras dependências conforme necessário (ex: JPA, banco de dados, etc.)
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+Java
+
+// src/main/java/com/decolatec/DecolaTec2025ApiApplication.java
+package com.decolatec;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DecolaTec2025ApiApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(DecolaTec2025ApiApplication.class, args);
+    }
+
+}
+Java
+
+// src/main/java/com/decolatec/model/Exemplo.java
+package com.decolatec.model;
+
+public class Exemplo {
+    private Long id;
+    private String nome;
+    private String descricao;
+
+    public Exemplo() {
+    }
+
+    public Exemplo(Long id, String nome, String descricao) {
+        this.id = id;
+        this.nome = nome;
+        this.descricao = descricao;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+}
+Java
+
+// src/main/java/com/decolatec/controller/ExemploController.java
+package com.decolatec.controller;
+
+import com.decolatec.model.Exemplo;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/exemplos")
+public class ExemploController {
+
+    private List<Exemplo> exemplos = new ArrayList<>();
+    private Long proximoId = 1L;
+
+    @GetMapping
+    public ResponseEntity<List<Exemplo>> listarExemplos(@RequestParam(required = false) String nome) {
+        if (nome != null && !nome.isEmpty()) {
+            List<Exemplo> resultados = exemplos.stream()
+                    .filter(exemplo -> exemplo.getNome().toLowerCase().contains(nome.toLowerCase()))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(resultados);
+        }
+        return ResponseEntity.ok(exemplos);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Exemplo> buscarExemploPorId(@PathVariable Long id) {
+        return exemplos.stream()
+                .filter(exemplo -> exemplo.getId().equals(id))
+                .findFirst()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Exemplo> criarExemplo(@RequestBody Exemplo exemplo) {
+        exemplo.setId(proximoId++);
+        exemplos.add(exemplo);
+        return new ResponseEntity<>(exemplo, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Exemplo> atualizarExemplo(@PathVariable Long id, @RequestBody Exemplo exemploAtualizado) {
+        return exemplos.stream()
+                .filter(exemplo -> exemplo.getId().equals(id))
+                .findFirst()
+                .map(exemplo -> {
+                    exemplo.setNome(exemploAtualizado.getNome());
+                    exemplo.setDescricao(exemploAtualizado.getDescricao());
+                    return ResponseEntity.ok(exemplo);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarExemplo(@PathVariable Long id) {
+        boolean removido = exemplos.removeIf(exemplo -> exemplo.getId().equals(id));
+        if (removido) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}
